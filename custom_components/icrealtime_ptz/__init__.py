@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -12,13 +13,17 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["button"]
 
-_CARD_URL = "/icrealtime_ptz/icrealtime-ptz-card.js"
 _CARD_PATH = Path(__file__).parent / "www" / "icrealtime-ptz-card.js"
+_CARD_BASE_URL = "/icrealtime_ptz/icrealtime-ptz-card.js"
+
+# Append version so browsers always fetch fresh JS after an update
+_VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text())["version"]
+_CARD_URL = f"{_CARD_BASE_URL}?v={_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(_CARD_URL, str(_CARD_PATH), cache_headers=False)]
+        [StaticPathConfig(_CARD_BASE_URL, str(_CARD_PATH), cache_headers=False)]
     )
 
     async def _register_lovelace_resource(event=None):
@@ -36,8 +41,17 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                 return
 
             await resources.async_load()
-            existing = {item.get("url") for item in resources.async_items()}
-            if _CARD_URL not in existing:
+            items = list(resources.async_items())
+            existing_urls = {item.get("url") for item in items}
+
+            # Remove any stale entries for this card (old versions or unversioned)
+            for item in items:
+                url = item.get("url", "")
+                if url.startswith(_CARD_BASE_URL) and url != _CARD_URL:
+                    await resources.async_delete_item(item["id"])
+                    _LOGGER.info("Removed stale Lovelace resource: %s", url)
+
+            if _CARD_URL not in existing_urls:
                 await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
                 _LOGGER.info("Registered Lovelace resource: %s", _CARD_URL)
             else:

@@ -18,39 +18,102 @@ const HA_COLORS = {
 };
 
 class ICRealtimePTZCard extends HTMLElement {
+  constructor() {
+    super();
+    this._entities = { up: null, down: null, left: null, right: null };
+    this._entitiesResolved = false;
+    this._built = false;
+  }
+
   setConfig(config) {
-    this._config = {
-      title: "",
-      color: "primary",
-      up: "button.pan_up",
-      down: "button.pan_down",
-      left: "button.pan_left",
-      right: "button.pan_right",
-      ...config,
+    this._config = { title: "", color: "primary", ...config };
+
+    // Reset resolved state when config changes
+    this._entitiesResolved = false;
+
+    // If explicit entities provided use them directly
+    this._entities = {
+      up:    config.up    || null,
+      down:  config.down  || null,
+      left:  config.left  || null,
+      right: config.right || null,
     };
+
     this._render();
   }
 
   set hass(hass) {
     this._hass = hass;
+    // Auto-discover entities from device ID on first hass update
+    if (this._config.device && !this._entitiesResolved) {
+      this._resolveEntities();
+    }
+    if (this._built) this._applyColor();
+  }
+
+  async _resolveEntities() {
+    try {
+      const deviceId = await this._resolveDeviceId();
+      if (!deviceId) {
+        console.error("IC Realtime PTZ: device not found:", this._config.device);
+        return;
+      }
+      const all = await this._hass.callWS({ type: "config/entity_registry/list" });
+      for (const e of all) {
+        if (e.device_id !== deviceId) continue;
+        const name = (e.name || e.original_name || "").toLowerCase();
+        if      (name.includes("up"))    this._entities.up    = e.entity_id;
+        else if (name.includes("down"))  this._entities.down  = e.entity_id;
+        else if (name.includes("left"))  this._entities.left  = e.entity_id;
+        else if (name.includes("right")) this._entities.right = e.entity_id;
+      }
+      this._entitiesResolved = true;
+      this._updateButtonEntities();
+    } catch (err) {
+      console.error("IC Realtime PTZ: could not resolve entities", err);
+    }
+  }
+
+  async _resolveDeviceId() {
+    const device = this._config.device;
+    // If it looks like a UUID, use it directly
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(device)) {
+      return device;
+    }
+    // Otherwise look up by device name (case-insensitive)
+    const devices = await this._hass.callWS({ type: "config/device_registry/list" });
+    const match = devices.find(
+      (d) => (d.name_by_user || d.name || "").toLowerCase() === device.toLowerCase()
+    );
+    return match?.id ?? null;
+  }
+
+  _updateButtonEntities() {
+    if (!this._built) return;
+    for (const [dir, entityId] of Object.entries(this._entities)) {
+      const btn = this.shadowRoot.querySelector(`.btn.${dir}`);
+      if (btn && entityId) btn.dataset.entity = entityId;
+    }
+  }
+
+  _applyColor() {
+    const btnColor = HA_COLORS[this._config.color] ?? this._config.color;
+    this.shadowRoot.host.style.setProperty("--btn-color", btnColor);
   }
 
   _render() {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
 
-    const { title, color, up, down, left, right } = this._config;
-
-    // Only build the DOM once; update color via CSS variable after
     if (!this._built) {
       this.shadowRoot.innerHTML = `
         <ha-card>
           <div class="card-header" id="header" style="display:none"></div>
           <div class="dpad">
-            <button class="btn up"    data-entity="${up}"    title="Pan Up">▲</button>
-            <button class="btn left"  data-entity="${left}"  title="Pan Left">◀</button>
+            <button class="btn up"    title="Pan Up">▲</button>
+            <button class="btn left"  title="Pan Left">◀</button>
             <div class="center"></div>
-            <button class="btn right" data-entity="${right}" title="Pan Right">▶</button>
-            <button class="btn down"  data-entity="${down}"  title="Pan Down">▼</button>
+            <button class="btn right" title="Pan Right">▶</button>
+            <button class="btn down"  title="Pan Down">▼</button>
           </div>
           <style>
             :host { --btn-color: var(--primary-color); }
@@ -98,11 +161,10 @@ class ICRealtimePTZCard extends HTMLElement {
       `;
 
       this.shadowRoot.querySelectorAll(".btn").forEach((btn) => {
-        btn.addEventListener("click", () =>
-          this._hass.callService("button", "press", {
-            entity_id: btn.dataset.entity,
-          })
-        );
+        btn.addEventListener("click", () => {
+          const entityId = btn.dataset.entity;
+          if (entityId) this._hass.callService("button", "press", { entity_id: entityId });
+        });
       });
 
       this._built = true;
@@ -110,30 +172,21 @@ class ICRealtimePTZCard extends HTMLElement {
 
     // Update title
     const header = this.shadowRoot.getElementById("header");
-    if (title) {
-      header.textContent = title;
+    if (this._config.title) {
+      header.textContent = this._config.title;
       header.style.display = "";
     } else {
       header.style.display = "none";
     }
 
-    // Update button color via CSS custom property — no DOM rebuild needed
-    const btnColor = HA_COLORS[color] ?? color;
-    this.shadowRoot.host.style.setProperty("--btn-color", btnColor);
+    this._applyColor();
+    this._updateButtonEntities();
   }
 
-  getCardSize() {
-    return 2;
-  }
+  getCardSize() { return 2; }
 
   static getStubConfig() {
-    return {
-      color: "primary",
-      up: "button.pan_up",
-      down: "button.pan_down",
-      left: "button.pan_left",
-      right: "button.pan_right",
-    };
+    return { color: "primary", device: "" };
   }
 }
 
