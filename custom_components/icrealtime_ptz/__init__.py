@@ -44,12 +44,15 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             items = list(resources.async_items())
             existing_urls = {item.get("url") for item in items}
 
-            # Remove any stale entries for this card (old versions or unversioned)
+            # Remove stale entries for this card (old versions or unversioned)
             for item in items:
                 url = item.get("url", "")
                 if url.startswith(_CARD_BASE_URL) and url != _CARD_URL:
-                    await resources.async_delete_item(item["id"])
-                    _LOGGER.info("Removed stale Lovelace resource: %s", url)
+                    try:
+                        await resources.async_delete_item(item["id"])
+                        _LOGGER.info("Removed stale Lovelace resource: %s", url)
+                    except Exception as del_err:
+                        _LOGGER.debug("Could not remove stale resource %s: %s", url, del_err)
 
             if _CARD_URL not in existing_urls:
                 await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
