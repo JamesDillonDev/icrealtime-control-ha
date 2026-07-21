@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "IC Realtime PTZ",
+        "description": "Enter the details for your IC Realtime camera.",
+        "data": {
+          "host": "Host (IP address)",
+          "username": "Username",
+          "password": "Password",
+          "speed": "PTZ Speed (1–10)",
+          "duration": "Move Duration (seconds)"
+        }
+      }
+    }
+  }
+}
