@@ -9,6 +9,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_DURATION, CONF_SPEED, DEFAULT_DURATION, DEFAULT_SPEED, DOMAIN
@@ -57,6 +58,12 @@ class PTZButton(ButtonEntity):
         self._duration = duration
         self._attr_name = f"Pan {direction}"
         self._attr_unique_id = f"{entry_id}_ptz_{direction.lower()}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, host)},
+            name=f"IC Realtime PTZ ({host})",
+            manufacturer="IC Realtime",
+            model="PTZ Camera",
+        )
 
     def press(self) -> None:
         auth = HTTPDigestAuth(self._username, self._password)

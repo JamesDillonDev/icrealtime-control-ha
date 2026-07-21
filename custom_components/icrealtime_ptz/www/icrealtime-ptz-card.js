@@ -39,69 +39,87 @@ class ICRealtimePTZCard extends HTMLElement {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
 
     const { title, color, up, down, left, right } = this._config;
+
+    // Only build the DOM once; update color via CSS variable after
+    if (!this._built) {
+      this.shadowRoot.innerHTML = `
+        <ha-card>
+          <div class="card-header" id="header" style="display:none"></div>
+          <div class="dpad">
+            <button class="btn up"    data-entity="${up}"    title="Pan Up">▲</button>
+            <button class="btn left"  data-entity="${left}"  title="Pan Left">◀</button>
+            <div class="center"></div>
+            <button class="btn right" data-entity="${right}" title="Pan Right">▶</button>
+            <button class="btn down"  data-entity="${down}"  title="Pan Down">▼</button>
+          </div>
+          <style>
+            :host { --btn-color: var(--primary-color); }
+            .card-header {
+              padding: 8px 12px 0;
+              font-size: 1em;
+              font-weight: 500;
+              color: var(--ha-card-header-color, var(--primary-text-color));
+            }
+            .dpad {
+              display: grid;
+              grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+              grid-template-columns: 1fr 1fr 1fr;
+              grid-template-rows: 1fr 1fr 1fr;
+              gap: 4px;
+              padding: 10px;
+              max-width: 140px;
+              margin: 0 auto;
+            }
+            .btn {
+              background: var(--btn-color);
+              color: var(--text-primary-color);
+              border: none;
+              border-radius: 8px;
+              font-size: 16px;
+              cursor: pointer;
+              aspect-ratio: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transition: filter 0.1s, transform 0.1s;
+            }
+            .btn:hover  { filter: brightness(1.15); }
+            .btn:active { filter: brightness(0.75); transform: scale(0.92); }
+            .up     { grid-area: up; }
+            .down   { grid-area: down; }
+            .left   { grid-area: left; }
+            .right  { grid-area: right; }
+            .center { grid-area: center; }
+          </style>
+        </ha-card>
+      `;
+
+      this.shadowRoot.querySelectorAll(".btn").forEach((btn) => {
+        btn.addEventListener("click", () =>
+          this._hass.callService("button", "press", {
+            entity_id: btn.dataset.entity,
+          })
+        );
+      });
+
+      this._built = true;
+    }
+
+    // Update title
+    const header = this.shadowRoot.getElementById("header");
+    if (title) {
+      header.textContent = title;
+      header.style.display = "";
+    } else {
+      header.style.display = "none";
+    }
+
+    // Update button color via CSS custom property — no DOM rebuild needed
     const btnColor = HA_COLORS[color] ?? color;
-
-    this.shadowRoot.innerHTML = `
-      <ha-card>
-        ${title ? `<div class="card-header">${title}</div>` : ""}
-        <div class="dpad">
-          <button class="btn up"    data-entity="${up}"    title="Pan Up">▲</button>
-          <button class="btn left"  data-entity="${left}"  title="Pan Left">◀</button>
-          <div class="center"></div>
-          <button class="btn right" data-entity="${right}" title="Pan Right">▶</button>
-          <button class="btn down"  data-entity="${down}"  title="Pan Down">▼</button>
-        </div>
-        <style>
-          .card-header {
-            padding: 8px 12px 0;
-            font-size: 1em;
-            font-weight: 500;
-            color: var(--ha-card-header-color, var(--primary-text-color));
-          }
-          .dpad {
-            display: grid;
-            grid-template-areas:
-              ". up ."
-              "left center right"
-              ". down .";
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 4px;
-            padding: 10px;
-            max-width: 140px;
-            margin: 0 auto;
-          }
-          .btn {
-            background: ${btnColor};
-            color: var(--text-primary-color);
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: filter 0.1s, transform 0.1s;
-          }
-          .btn:hover  { filter: brightness(1.15); }
-          .btn:active { filter: brightness(0.75); transform: scale(0.92); }
-          .up     { grid-area: up; }
-          .down   { grid-area: down; }
-          .left   { grid-area: left; }
-          .right  { grid-area: right; }
-          .center { grid-area: center; }
-        </style>
-      </ha-card>
-    `;
-
-    this.shadowRoot.querySelectorAll(".btn").forEach((btn) => {
-      btn.addEventListener("click", () =>
-        this._hass.callService("button", "press", {
-          entity_id: btn.dataset.entity,
-        })
-      );
-    });
+    this.shadowRoot.host.style.setProperty("--btn-color", btnColor);
   }
 
   getCardSize() {
