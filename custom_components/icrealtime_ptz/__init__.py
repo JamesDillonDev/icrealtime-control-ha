@@ -1,9 +1,22 @@
+from pathlib import Path
+
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
 PLATFORMS = ["button"]
+
+_CARD_URL = "/icrealtime_ptz/icrealtime-ptz-card.js"
+_CARD_PATH = Path(__file__).parent / "www" / "icrealtime-ptz-card.js"
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(_CARD_URL, str(_CARD_PATH), cache_headers=False)]
+    )
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

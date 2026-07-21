@@ -51,6 +51,31 @@ Once configured, four button entities are created:
 
 ## Requirements
 
-- Home Assistant 2023.1.0 or newer
+- Home Assistant 2023.9.0 or newer
 - IC Realtime camera with CGI PTZ support accessible on your local network
+
+## Lovelace D-Pad Card
+
+This integration includes a custom D-pad control card.
+
+**1. Add the resource** (once, after installing the integration):
+
+Go to **Settings → Dashboards → ⋮ → Resources → Add Resource** and enter:
+
+| Field | Value |
+|---|---|
+| URL | `/icrealtime_ptz/icrealtime-ptz-card.js` |
+| Resource type | JavaScript module |
+
+**2. Add the card** to any dashboard via the card picker (search for *IC Realtime PTZ Card*), or manually:
+
+```yaml
+type: custom:icrealtime-ptz-card
+title: PTZ Control
+up: button.pan_up
+down: button.pan_down
+left: button.pan_left
+right: button.pan_right
+```
+
 
