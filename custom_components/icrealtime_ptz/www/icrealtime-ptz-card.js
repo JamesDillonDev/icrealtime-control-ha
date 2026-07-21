@@ -109,11 +109,11 @@ class ICRealtimePTZCard extends HTMLElement {
         <ha-card>
           <div class="card-header" id="header" style="display:none"></div>
           <div class="dpad">
-            <button class="btn up"    title="Pan Up">▲</button>
-            <button class="btn left"  title="Pan Left">◀</button>
+            <button class="btn up"    title="Pan Up">&#9650;</button>
+            <button class="btn left"  title="Pan Left">&#9664;</button>
             <div class="center"></div>
-            <button class="btn right" title="Pan Right">▶</button>
-            <button class="btn down"  title="Pan Down">▼</button>
+            <button class="btn right" title="Pan Right">&#9654;</button>
+            <button class="btn down"  title="Pan Down">&#9660;</button>
           </div>
           <style>
             :host { --btn-color: var(--primary-color); }
@@ -186,7 +186,10 @@ class ICRealtimePTZCard extends HTMLElement {
   getCardSize() { return 2; }
 
   static getStubConfig() {
-    return { color: "primary", device: "" };
+    return {
+      device: "",
+      color: "primary",
+    };
   }
 }
 

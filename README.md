@@ -40,14 +40,14 @@ A Home Assistant custom integration for controlling the pan/tilt movement of IC 
 
 ## Entities
 
-Once configured, four button entities are created:
+Once configured, four button entities are created under a single device:
 
 | Entity | Description |
 |---|---|
-| `button.pan_up` | Tilts the camera up |
-| `button.pan_down` | Tilts the camera down |
-| `button.pan_left` | Pans the camera left |
-| `button.pan_right` | Pans the camera right |
+| `button.<device>_pan_up` | Tilts the camera up |
+| `button.<device>_pan_down` | Tilts the camera down |
+| `button.<device>_pan_left` | Pans the camera left |
+| `button.<device>_pan_right` | Pans the camera right |
 
 ## Requirements
 
@@ -56,26 +56,22 @@ Once configured, four button entities are created:
 
 ## Lovelace D-Pad Card
 
-This integration includes a custom D-pad control card.
+This integration includes a custom D-pad control card that is automatically registered on startup — no manual resource step required.
 
-**1. Add the resource** (once, after installing the integration):
-
-Go to **Settings → Dashboards → ⋮ → Resources → Add Resource** and enter:
-
-| Field | Value |
-|---|---|
-| URL | `/icrealtime_ptz/icrealtime-ptz-card.js` |
-| Resource type | JavaScript module |
-
-**2. Add the card** to any dashboard via the card picker (search for *IC Realtime PTZ Card*), or manually:
+Add the card to any dashboard via the card picker (search for *IC Realtime PTZ Card*), or manually:
 
 ```yaml
 type: custom:icrealtime-ptz-card
-title: PTZ Control
-up: button.pan_up
-down: button.pan_down
-left: button.pan_left
-right: button.pan_right
+device: IC Realtime PTZ (192.168.0.192)
+color: blue
 ```
+
+Replace the `device` value with your camera's device name as it appears in **Settings → Devices & Services → IC Realtime PTZ**. You can also use the device's UUID from the URL.
+
+### Available colours
+
+`primary`, `accent`, `red`, `pink`, `purple`, `indigo`, `blue`, `cyan`, `teal`, `green`, `lime`, `yellow`, `amber`, `orange`, `brown`, `grey`
+
+Or any raw CSS value e.g. `color: "#ff6600"`
 
 
