@@ -23,15 +23,25 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def _register_lovelace_resource(event=None):
         try:
-            resources = hass.data.get("lovelace", {}).get("resources")
-            if resources is None:
-                _LOGGER.warning("Lovelace resources not available; add %s manually", _CARD_URL)
+            lovelace = hass.data.get("lovelace")
+            if lovelace is None:
+                _LOGGER.warning("Lovelace not found; add %s as a resource manually", _CARD_URL)
                 return
+
+            resources = getattr(lovelace, "resources", None)
+            if resources is None:
+                _LOGGER.warning(
+                    "Lovelace is in YAML mode; add %s as a resource manually", _CARD_URL
+                )
+                return
+
             await resources.async_load()
-            items = list(resources.async_items())
-            if not any(item.get("url") == _CARD_URL for item in items):
+            existing = {item.get("url") for item in resources.async_items()}
+            if _CARD_URL not in existing:
                 await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
                 _LOGGER.info("Registered Lovelace resource: %s", _CARD_URL)
+            else:
+                _LOGGER.debug("Lovelace resource already registered: %s", _CARD_URL)
         except Exception as err:
             _LOGGER.warning("Could not auto-register Lovelace resource: %s", err)
 
