@@ -1,7 +1,27 @@
+const HA_COLORS = {
+  primary:      "var(--primary-color)",
+  accent:       "var(--accent-color)",
+  red:          "var(--red-color)",
+  pink:         "var(--pink-color)",
+  purple:       "var(--purple-color)",
+  indigo:       "var(--indigo-color)",
+  blue:         "var(--blue-color)",
+  cyan:         "var(--cyan-color)",
+  teal:         "var(--teal-color)",
+  green:        "var(--green-color)",
+  lime:         "var(--lime-color)",
+  yellow:       "var(--yellow-color)",
+  amber:        "var(--amber-color)",
+  orange:       "var(--orange-color)",
+  brown:        "var(--brown-color)",
+  grey:         "var(--grey-color)",
+};
+
 class ICRealtimePTZCard extends HTMLElement {
   setConfig(config) {
     this._config = {
-      title: "PTZ Control",
+      title: "",
+      color: "primary",
       up: "button.pan_up",
       down: "button.pan_down",
       left: "button.pan_left",
@@ -18,11 +38,12 @@ class ICRealtimePTZCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
 
-    const { title, up, down, left, right } = this._config;
+    const { title, color, up, down, left, right } = this._config;
+    const btnColor = HA_COLORS[color] ?? color;
 
     this.shadowRoot.innerHTML = `
       <ha-card>
-        <div class="card-header">${title}</div>
+        ${title ? `<div class="card-header">${title}</div>` : ""}
         <div class="dpad">
           <button class="btn up"    data-entity="${up}"    title="Pan Up">▲</button>
           <button class="btn left"  data-entity="${left}"  title="Pan Left">◀</button>
@@ -32,8 +53,8 @@ class ICRealtimePTZCard extends HTMLElement {
         </div>
         <style>
           .card-header {
-            padding: 12px 16px 0;
-            font-size: 1.1em;
+            padding: 8px 12px 0;
+            font-size: 1em;
             font-weight: 500;
             color: var(--ha-card-header-color, var(--primary-text-color));
           }
@@ -45,17 +66,17 @@ class ICRealtimePTZCard extends HTMLElement {
               ". down .";
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
-            gap: 6px;
-            padding: 16px;
-            max-width: 200px;
+            gap: 4px;
+            padding: 10px;
+            max-width: 140px;
             margin: 0 auto;
           }
           .btn {
-            background: var(--primary-color);
+            background: ${btnColor};
             color: var(--text-primary-color);
             border: none;
-            border-radius: 10px;
-            font-size: 22px;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
             aspect-ratio: 1;
             display: flex;
@@ -84,12 +105,12 @@ class ICRealtimePTZCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 3;
+    return 2;
   }
 
   static getStubConfig() {
     return {
-      title: "PTZ Control",
+      color: "primary",
       up: "button.pan_up",
       down: "button.pan_down",
       left: "button.pan_left",
